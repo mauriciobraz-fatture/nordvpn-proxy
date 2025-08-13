@@ -16,27 +16,26 @@ if [[ ! -v SERVER ]]; then
         else
             QUERY_PARAM=$QUERY_PARAM'limit='$RANDOM_TOP
     fi
-    if [ -z "$COUNTRY" ]
-        then 
-            echo "$(adddate) INFO: No country has been set. The default will be picked by NordVPN API. If you want to use a country, please use e.g. COUNTRY=it"
-            #GET fastest server based on NordVPN API
-            #https://api.nordvpn.com/v1/servers/recommendations
+    if [ -z "$COUNTRY" ]; 
+        then
+            echo "$(adddate) INFO: No country has been set. The default will be picked by NordVPN API."
         else
-            echo "$(adddate) INFO: Your country setting will be used. This is set to: ${COUNTRY^^}"
+            echo "$(adddate) INFO: Your country setting will be used: ${COUNTRY^^}"
 
-            #Country codes will only be fetched once. You can force to get a new list to start a new container
-            #This will speed up the process
-            if [ -f "$JSON_FILE_SERVER_COUNTRIES" ]
-                then
-                    echo "$(adddate) INFO: The country codes are known, skipping"
-                    export COUNTRY_CODE=$(cat $JSON_FILE_SERVER_COUNTRIES | jq '.[]  | select(.code == "'${COUNTRY^^}'") | .id')
-                else 
-                    echo "$(adddate) INFO: The country codes are unknown, getting country codes from API"
-                    curl -s https://nordvpn.com/wp-admin/admin-ajax.php?action=servers_countries -o /tmp/servers_countries
-                    export COUNTRY_CODE=$(cat $JSON_FILE_SERVER_COUNTRIES | jq '.[]  | select(.code == "'${COUNTRY^^}'") | .id')
+            # Fetch and resolve country ID directly from the API
+            COUNTRY_CODE=$(curl --silent "https://api.nordvpn.com/v1/servers/countries" \
+                | jq --raw-output --arg CODE "${COUNTRY^^}" '.[] | select(.code == $CODE) | .id')
+
+            if [ -z "$COUNTRY_CODE" ]; then
+                echo "$(adddate) ERROR: Unable to resolve country code for '${COUNTRY^^}'"
+                echo "$(adddate) ERROR: Check country abbreviation or API availability."
+                exit 1
             fi
 
-            QUERY_PARAM=$QUERY_PARAM'&filters%5Bcountry_id%5D='$COUNTRY_CODE
+            echo "$(adddate) INFO: Resolved country ID $COUNTRY_CODE for country ${COUNTRY^^}"
+
+            # Add to query string used to fetch servers
+            QUERY_PARAM="${QUERY_PARAM}&filters%5Bcountry_id%5D=${COUNTRY_CODE}"
     fi
     
     #Set filter based on OpenVPN with the correct protocol
