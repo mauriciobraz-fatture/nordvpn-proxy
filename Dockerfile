@@ -1,5 +1,5 @@
 FROM alpine:3.21.0
-LABEL MAINTAINER "Jeroen Slot"
+LABEL MAINTAINER "Maurício Braz"
 
 ENV OVPN_FILES="https://downloads.nordcdn.com/configs/archives/servers/ovpn.zip" \
     OVPN_CONFIG_DIR="/app/ovpn/config" \
@@ -41,4 +41,3 @@ CMD ["runsvdir", "/app"]
 
 HEALTHCHECK --interval=1m --timeout=10s \
   CMD if [[ $( curl -s -x localhost:8118 https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data | jq -r '.["status"]' ) = "true" ]] ; then exit 0; else exit 1; fi
-
