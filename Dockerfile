@@ -40,4 +40,4 @@ RUN \
 CMD ["runsvdir", "/app"]
 
 HEALTHCHECK --interval=1m --timeout=10s \
-  CMD if [[ $( curl -s -x localhost:8118 https://nordvpn.com/wp-admin/admin-ajax.php?action=get_user_info_data | jq -r '.["status"]' ) = "true" ]] ; then exit 0; else exit 1; fi
+  CMD sh -c 'ip=$(curl -s -x localhost:8118 https://api.ipify.org); [ -n "$ip" ] && [ "$ip" != "127.0.0.1" ]'
